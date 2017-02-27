@@ -1,0 +1,116 @@
+---
+title: "Prediction Machine Learning"
+author: "Aditya Pradana"
+date: "February 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## EXECUTIVE SUMMARY
+
+This report is created to discuss the Human Activity Recognition. It is to obsserve how well a person is doing a certain activity, in this case Biceps Curls. There will six subjects whom will be asked to do a set of 10 repetitions of dumbbell curls They will do the curl in 5 different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E). Their response will be measured and a prediction algorithm will be created to determine which type of activity they are doing.
+
+The goal of this report is to create a high accuracy prediction algorithm model which will then be used to predict the type of activities in the testing dataset. The result of the dataset is shown at the end of the CONTENT section.
+
+More information about this Human Activity Recognition can be found in this website: http://groupware.les.inf.puc-rio.br/har.
+
+
+## CONTENT
+
+This report will download and read files from user's current working directory.
+
+```{r download}
+##download file
+fileUrl1 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+fileUrl2 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+if(!file.exists("pml-training.csv"))
+{
+  download.file(fileUrl1, destfile = "pml-training.csv") 
+}
+
+if(!file.exists("pml-testing.csv"))
+{
+  download.file(fileUrl2, destfile = "pml-testing.csv")
+}
+
+```
+
+```{r readFile}
+training <- read.csv("pml-training.csv", header=T, stringsAsFactors = F)
+testing <- read.csv("pml-testing.csv", header=T,stringsAsFactors = F)
+
+
+```
+  
+Cross Validation method will create a pair of training and test set out of the original training set. Probability will be set to 0.7 to have more data in the training set to train the model.
+
+```{r crossVal, message=FALSE}
+library(caret)
+training2 <- training
+intrain <- createDataPartition(training2$classe, p=0.7, list=F)
+training2train <- training2[intrain,]
+training2test <- training2[-intrain,]
+```
+  
+The majority of unnecessary predictors will then be removed using nearZeroVariance method. The unused predictors and predictors with majority NA value will also be removed. We will mainly focus on Euler angles, accelerometer, gyrometer, and magnetometer data.
+
+```{r cleanDataset}
+training2train <- training2train[,-nearZeroVar(training2train)]
+training2train <- training2train[,-1:-6]
+training2train <- training2train[,colSums(is.na(training2train))==0]
+
+```
+  
+
+Once dataset has been cleaned and prepared thoroughly, start building the model. Random Forest method will be used since this is a large dataset and Random Forest has good accuracy. GBM method was also tried but it takes considerably longer time to build the model so Random Forest is preferred.
+
+```{r createModel, cache=TRUE}
+set.seed(1)
+modFit <- train(classe ~ . , method='rf', data=training2train, ntree=20)
+p <- predict(modFit, training2test)
+confusionMatrix(p, training2test$classe)
+
+```
+  
+The confusion Matrix helps us to predict the accuracy of the model. It can be seen here that the accuracy is approximately 99%. This is a very accurate model to predict the type of bicep curl movement that the subject is doing. There is 1% error rate which is probably due to zero values in the sensor data of some of the subjects. Adelmo's forearm Euler Angle have all zero values. Jeremy's arm Euler Angle is also having all zero values.
+
+Finally, predict the real testing set.
+```{r predict}
+result <- predict(modFit, testing)
+result
+
+
+```
+  
+  
+<br>
+
+## CONCLUSION
+
+In conclusion, machine learning algorithm is a good tool to do a prediction based on available data. Random Forest algorithm that is used here is suitable to do prediction. 20 Trees are grown for random forest. Additional trees grown are not very helpful in improving the accuracy and it makes the model creation takes an inefficient amount of time. The result got 20/20 score in the quiz. This proves that this prediction model is highly accurate.
+
+  
+<br>
+
+## APPENDIX
+
+No data for Adelmo's forearm Euler angle:
+```{r adelmo}
+table(training[training$user_name=="adelmo",]$roll_forearm)
+table(training[training$user_name=="adelmo",]$pitch_forearm)
+table(training[training$user_name=="adelmo",]$yaw_forearm)
+```
+
+<br>
+
+No data for Jeremy's arm Euler angle:
+```{r jeremy}
+table(training[training$user_name=="jeremy",]$roll_arm)
+table(training[training$user_name=="jeremy",]$pitch_arm)
+table(training[training$user_name=="jeremy",]$yaw_arm)
+```
+
