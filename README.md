@@ -1,2 +1,2 @@
 # MachineLearningProject
-Repository for Machine Learning Prediction Model Project
+Repository for my Machine Learning Projects
