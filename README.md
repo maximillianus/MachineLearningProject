@@ -1,2 +1,2 @@
 # MachineLearningProject
-Repository for my Machine Learning Projects
+Machine Learning Project on Human Activity Recognition from Coursera
